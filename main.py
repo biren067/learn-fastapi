@@ -7,6 +7,10 @@ class Book(BaseModel):
 	title: str
 	author: str
 
+class CreateBook(BaseModel):
+	title: str
+	author: str
+
 app = FastAPI()
 
 
@@ -48,4 +52,16 @@ async def sorted_book(author:str,field:str)->List[str]:
 	if not result:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
 	return result
+
+@app.post("/book")
+async def load_book(record:CreateBook):
+	data = read_json()
+	print("data", data)
+	id = len(data) + 1
+	book_dict = {"id": id, "title": record.title, "author": record.author}
+	data.append(book_dict)
+	print(data)
+	with open("./json_data.json","w") as f:
+		json.dump(data, f, indent=4)
+	return read_json()
 
