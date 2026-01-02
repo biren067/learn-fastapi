@@ -13,8 +13,11 @@ class CreateBook(BaseModel):
 	author: str
 
 class UpdateBook(BaseModel):
-	title: Optional[str] = None
-	author: Optional[str] = None
+    title: str      # Required
+    author: str     # Required
+class PartialBook(BaseModel):
+    title: Optional[str] = None    # Optional
+    author: Optional[str] = None   # Optional
 
 app = FastAPI()
 
@@ -71,16 +74,16 @@ async def load_book(record:CreateBook):
 	return read_json()
 
 
-@app.put("/update_book/{id}")
-async def update_book(id:int,record: UpdateBook):
+@app.put("/book/{id}")
+async def update_book(id:int, record: UpdateBook):
 	data = read_json()
 	flag = False
 	for ob in data:
 		if ob.get("id") == id:
 			flag = True
-			if record.title:
+			if record.title is not None:
 				ob["title"] = record.title
-			if record.author:	
+			if record.author is not None:	
 				ob["author"] = record.author
 			break
 	if flag:
@@ -88,5 +91,42 @@ async def update_book(id:int,record: UpdateBook):
 			json.dump(data, f, indent=4)
 		return read_json()
 	else:
-		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Resource not available")
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not available")
+
+
+@app.patch("/book/{id}")
+async def patch_book(id: int, record: PartialBook):
+	data = read_json()
+	flag = False
+	for ob in data:
+		if ob.get("id") == id:
+			flag = True
+			if record.title is not None:
+				ob["title"] = record.title
+			if record.author is not None:	
+				ob["author"] = record.author
+			break
+	if flag:
+		with open("./json_data.json","w") as f:
+			json.dump(data, f, indent=4)
+		return read_json()
+	else:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not available")
+
+
+@app.delete("/book/{id}")
+async def delete_book(id: int):
+	data = read_json()
+	flag = False
+	for i, ob in enumerate(data):
+		if ob.get("id") == id:
+			flag = True
+			data.pop(i)
+			break
+	if flag:
+		with open("./json_data.json","w") as f:
+			json.dump(data, f, indent=4)
+		return {"message": "Book deleted successfully"}
+	else:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
 
