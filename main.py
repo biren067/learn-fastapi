@@ -1,17 +1,40 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, status, HTTPException
 from pydantic import BaseModel
-from typing import List
+import json
+from typing import List,Dict,Optional
 class Book(BaseModel):
+	id: int
 	title: str
 	author: str
 
 app = FastAPI()
 
-@app.get("/")
-async def books()-> List[Book]:
-	book1 = Book(title="Rich Dad Poor Dad", author="kyolink")
-	book2 = Book(title="The Maurya Samaj", author="Vishnu gupta")
 
-	books = [book1,book2]
+def read_json()->List[Dict[str,str]]:
+	contents = []
+	try:
+		with open("./json_data.json","r") as f:
+			contents = json.load(f)
+			print("Found data...",type(contents))
+			return contents
+	except FileNotFoundError:
+		print("File not found.")
+		return []
+	except json.JSONDecodeError:
+		print("Error: Invalid JSON format")
+		return []
+	
 
-	return books
+@app.get("/",status_code=status.HTTP_200_OK)
+async def get_all_books()-> List[Book]:
+	data = read_json()
+	return data
+
+
+@app.get("/{id}",status_code=status.HTTP_200_OK)
+async def get_book(id:int)-> List[Book]:
+	data = read_json()
+	ob = [obj for obj in data if obj.get('id')==id]
+	if not ob:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+	return ob
