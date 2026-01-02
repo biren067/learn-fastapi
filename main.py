@@ -2,6 +2,7 @@ from fastapi import FastAPI, status, HTTPException
 from pydantic import BaseModel
 import json
 from typing import List,Dict,Optional
+
 class Book(BaseModel):
 	id: int
 	title: str
@@ -10,6 +11,10 @@ class Book(BaseModel):
 class CreateBook(BaseModel):
 	title: str
 	author: str
+
+class UpdateBook(BaseModel):
+	title: Optional[str] = None
+	author: Optional[str] = None
 
 app = FastAPI()
 
@@ -64,4 +69,24 @@ async def load_book(record:CreateBook):
 	with open("./json_data.json","w") as f:
 		json.dump(data, f, indent=4)
 	return read_json()
+
+
+@app.put("/update_book/{id}")
+async def update_book(id:int,record: UpdateBook):
+	data = read_json()
+	flag = False
+	for ob in data:
+		if ob.get("id") == id:
+			flag = True
+			if record.title:
+				ob["title"] = record.title
+			if record.author:	
+				ob["author"] = record.author
+			break
+	if flag:
+		with open("./json_data.json","w") as f:
+			json.dump(data, f, indent=4)
+		return read_json()
+	else:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Resource not available")
 
