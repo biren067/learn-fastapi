@@ -14,7 +14,6 @@ def read_json()->List[Dict[str,str]]:
 	try:
 		with open(json_path,"r") as f:
 			contents = json.load(f)
-			print("Found data...",type(contents))
 			return contents
 	except FileNotFoundError:
 		print("File not found.")
@@ -26,12 +25,14 @@ def read_json()->List[Dict[str,str]]:
 
 @router.get("/",status_code=status.HTTP_200_OK)
 async def get_all_books()-> List[Book]:
+	print("Getting all books")
 	data = read_json()
 	return data
 
 
 @router.get("/{id}",status_code=status.HTTP_200_OK)
 async def get_book(id:int)-> List[Book]:
+	print(f"Getting book with id {id}")
 	data = read_json()
 	ob = [obj for obj in data if obj.get('id')==id]
 	if not ob:
@@ -41,6 +42,7 @@ async def get_book(id:int)-> List[Book]:
 # path param and query param
 @router.get("/sorted/{author}")
 async def sorted_book(author:str,field:str)->List[str]:
+	print(f"Getting books by author {author} sorted by field {field}")
 	data = read_json()
 	ob = [obj for obj in data if obj.get('author')==author]
 	result = [value.get(field) for value in ob]
@@ -48,23 +50,28 @@ async def sorted_book(author:str,field:str)->List[str]:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
 	return result
 
-@router.post("/book")
+@router.post("/",status_code=status.HTTP_201_CREATED)
 async def load_book(record:CreateBook):
+	print("Loading new book")
 	data = read_json()
 	id = len(data) + 1
 	book_dict = {"id": id, "title": record.title, "author": record.author}
 	data.append(book_dict)
-	with open("./json_data.json","w") as f:
+	with open(json_path,"w") as f:
 		json.dump(data, f, indent=4)
 	return read_json()
 
 
-@router.put("/book/{id}")
+@router.put("/{id}")
 async def update_book(id:int, record: UpdateBook):
+	print("Updating book")
 	data = read_json()
 	flag = False
+	print("Updating the record", id)
+	print(data)
 	for ob in data:
 		if ob.get("id") == id:
+			print("Found the record",id)
 			flag = True
 			if record.title is not None:
 				ob["title"] = record.title
@@ -72,15 +79,16 @@ async def update_book(id:int, record: UpdateBook):
 				ob["author"] = record.author
 			break
 	if flag:
-		with open("./json_data.json","w") as f:
+		with open(json_path,"w") as f:
 			json.dump(data, f, indent=4)
 		return read_json()
 	else:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not available")
 
 
-@router.patch("/book/{id}")
+@router.patch("/{id}")
 async def patch_book(id: int, record: PartialBook):
+	print("Patching book")
 	data = read_json()
 	flag = False
 	for ob in data:
@@ -92,15 +100,16 @@ async def patch_book(id: int, record: PartialBook):
 				ob["author"] = record.author
 			break
 	if flag:
-		with open("./json_data.json","w") as f:
+		with open(json_path,"w") as f:
 			json.dump(data, f, indent=4)
 		return read_json()
 	else:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not available")
 
 
-@router.delete("/book/{id}")
+@router.delete("/{id}")
 async def delete_book(id: int):
+	print("Deleting book")
 	data = read_json()
 	flag = False
 	for i, ob in enumerate(data):
@@ -109,7 +118,7 @@ async def delete_book(id: int):
 			data.pop(i)
 			break
 	if flag:
-		with open("./json_data.json","w") as f:
+		with open(json_path,"w") as f:
 			json.dump(data, f, indent=4)
 		return {"message": "Book deleted successfully"}
 	else:

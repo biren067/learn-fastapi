@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 import src.book.routers as book
-app = FastAPI(version="1.0.0")
-app.include_router(book.router)
+version = "v1"
+app = FastAPI(version=version)
+app.include_router(book.router,prefix=f"/api/{version}/book")
 
 
 
