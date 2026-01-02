@@ -1,31 +1,18 @@
-from fastapi import FastAPI, status, HTTPException
+from fastapi import FastAPI,APIRouter, status, HTTPException
 from pydantic import BaseModel
 import json
-from typing import List,Dict,Optional
+from typing import List,Dict
+from .schemas import Book, CreateBook, UpdateBook, PartialBook
+import os
+json_path = os.path.join(os.path.dirname(__file__),'json_data.json')
 
-class Book(BaseModel):
-	id: int
-	title: str
-	author: str
-
-class CreateBook(BaseModel):
-	title: str
-	author: str
-
-class UpdateBook(BaseModel):
-    title: str      # Required
-    author: str     # Required
-class PartialBook(BaseModel):
-    title: Optional[str] = None    # Optional
-    author: Optional[str] = None   # Optional
-
-app = FastAPI()
+router = APIRouter()
 
 
 def read_json()->List[Dict[str,str]]:
 	contents = []
 	try:
-		with open("./json_data.json","r") as f:
+		with open(json_path,"r") as f:
 			contents = json.load(f)
 			print("Found data...",type(contents))
 			return contents
@@ -35,15 +22,15 @@ def read_json()->List[Dict[str,str]]:
 	except json.JSONDecodeError:
 		print("Error: Invalid JSON format")
 		return []
-	
 
-@app.get("/",status_code=status.HTTP_200_OK)
+
+@router.get("/",status_code=status.HTTP_200_OK)
 async def get_all_books()-> List[Book]:
 	data = read_json()
 	return data
 
 
-@app.get("/{id}",status_code=status.HTTP_200_OK)
+@router.get("/{id}",status_code=status.HTTP_200_OK)
 async def get_book(id:int)-> List[Book]:
 	data = read_json()
 	ob = [obj for obj in data if obj.get('id')==id]
@@ -52,7 +39,7 @@ async def get_book(id:int)-> List[Book]:
 	return ob
 
 # path param and query param
-@app.get("/sorted/{author}")
+@router.get("/sorted/{author}")
 async def sorted_book(author:str,field:str)->List[str]:
 	data = read_json()
 	ob = [obj for obj in data if obj.get('author')==author]
@@ -61,20 +48,18 @@ async def sorted_book(author:str,field:str)->List[str]:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
 	return result
 
-@app.post("/book")
+@router.post("/book")
 async def load_book(record:CreateBook):
 	data = read_json()
-	print("data", data)
 	id = len(data) + 1
 	book_dict = {"id": id, "title": record.title, "author": record.author}
 	data.append(book_dict)
-	print(data)
 	with open("./json_data.json","w") as f:
 		json.dump(data, f, indent=4)
 	return read_json()
 
 
-@app.put("/book/{id}")
+@router.put("/book/{id}")
 async def update_book(id:int, record: UpdateBook):
 	data = read_json()
 	flag = False
@@ -94,7 +79,7 @@ async def update_book(id:int, record: UpdateBook):
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not available")
 
 
-@app.patch("/book/{id}")
+@router.patch("/book/{id}")
 async def patch_book(id: int, record: PartialBook):
 	data = read_json()
 	flag = False
@@ -114,7 +99,7 @@ async def patch_book(id: int, record: PartialBook):
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not available")
 
 
-@app.delete("/book/{id}")
+@router.delete("/book/{id}")
 async def delete_book(id: int):
 	data = read_json()
 	flag = False
@@ -129,4 +114,3 @@ async def delete_book(id: int):
 		return {"message": "Book deleted successfully"}
 	else:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
-
