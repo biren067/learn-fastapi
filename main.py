@@ -38,3 +38,14 @@ async def get_book(id:int)-> List[Book]:
 	if not ob:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
 	return ob
+
+# path param and query param
+@app.get("/sorted/{author}")
+async def sorted_book(author:str,field:str)->List[str]:
+	data = read_json()
+	ob = [obj for obj in data if obj.get('author')==author]
+	result = [value.get(field) for value in ob]
+	if not result:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+	return result
+
